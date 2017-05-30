@@ -378,6 +378,36 @@ bot.registerCommand(
 	}
 );
 
+bot.registerCommand(
+	'SoundList',
+	(msg, args) => {
+		if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
+		if (guildData[msg.guild.id].sounds === undefined || guildData[msg.guild.id].sounds.length === 0) {
+			return 'No sounds have been created on this guild.';
+		} else {
+			let verbose = false;
+			for (let i = 0; i < args.length; i++) {
+				if (args[i].toLowerCase() === '--verbose') {
+					verbose = true;
+				}
+			}
+			let newmsg = `Sounds available on ${msg.guild.name}`;
+			for (var i = 0; i < guildData[msg.guild.id].sounds.length; i++) {
+				if (verbose) newmsg += `\n`;
+				newmsg += `\n${guildData[msg.guild.id].sounds[i].name}`;
+				if (verbose) newmsg += ` - www.youtube.com/watch?v=${guildData[msg.guild.id].sounds[i].video}`;
+			}
+			return newmsg;
+		}
+	},
+	{
+		aliases: ['ListSounds', 'ShowSounds', '~Sounds'],
+		usage: 'SoundList [--verbose]',
+		description: 'List all sounds',
+		fullDescription: 'Produces a list of all available sound tags on the current guild. Adding the --verbose flag displays the url for each tag.',
+	}
+);
+
 for (var id in guildData) {
 	if (guildData[id].settings.hasOwnProperty(id)) {
 		if (guildData[id].settings.prefix !== undefined && guildData[id].settings.prefix !== '') {
