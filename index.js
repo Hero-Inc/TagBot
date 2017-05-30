@@ -341,6 +341,43 @@ bot.registerCommand(
 	}
 );
 
+bot.registerCommand(
+	'RemoveSound',
+	(msg, args) => {
+		if (args.length > 0) {
+			if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
+			if (guildData[msg.guild.id].sounds === undefined) guildData[msg.guild.id].sounds = [];
+			for (let i = 0; i < guildData[msg.guild.id].sounds.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.guild.id].sounds[i].name) {
+					let bkup = guildData[msg.guild.id].sounds;
+					try {
+						guildData[msg.guild.id].sounds.splice(i, 1);
+						fs.writeFileSync(`guildData/${msg.guild.id}.json`, JSON.stringify(guildData[msg.guild.id]));
+						return `Tag Removed`;
+					} catch (e) {
+						guildData[msg.guild.id].sounds = bkup;
+						console.log(`Issue saving sounds for server ID ${msg.guild.id}: ${e}`);
+						return `Error saving sounds for this server`;
+					}
+				}
+			}
+			return `Sorry, that soundname doesn't seem to exist on this server.`;
+		} else {
+			return `Incorrect syntax refer to 'Help RemoveSound' for more info`;
+		}
+	},
+	{
+		aliases: ['-Sound', 'DeleteSound', 'DestroySound'],
+		description: 'Remove a saved sound',
+		fullDescription: 'Remove a sound tag which has been saved on this guild.',
+		usage: 'RemoveSound <soundName>',
+		argsRequired: true,
+		requirements: {
+			roleNames: ['tagbotadmin'],
+		},
+	}
+);
+
 for (var id in guildData) {
 	if (guildData[id].settings.hasOwnProperty(id)) {
 		if (guildData[id].settings.prefix !== undefined && guildData[id].settings.prefix !== '') {
