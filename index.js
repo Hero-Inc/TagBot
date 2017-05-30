@@ -2,7 +2,7 @@ const Discord = require('eris');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 
-var config, guildData;
+var config, guildData, queue;
 
 let files = fs.readdirSync('./');
 if (files === undefined || files.length < 2) {
@@ -225,6 +225,119 @@ bot.registerCommand(
 		description: 'Use a tag',
 		argsRequired: true,
 		fullDescription: 'Returns the message attached to a specific tag name on this guild.',
+	}
+);
+
+function next(id) {
+	bot.joinVoiceChannel(queue[id].channel)
+		.then(conn => {
+			conn.play(queue[id][0].sound)
+				.on(`end`, reason => {
+					queue[id].splice(0, 1);
+					if (queue[id].length > 0) {
+						return next(bot, id);
+					}
+					conn.disconnect();
+				});
+		})
+		.catch(e => {
+			bot.createMessage(queue[id][0].text, `[ERROR] Error joining voice channel: ${e}`);
+			queue[id].splice(0, 1);
+			if (queue[id].length > 0) {
+				return next(bot, id);
+			}
+		});
+}
+
+bot.registerCommand(
+	'AddSound',
+	(msg, args) => {
+		if (args.length === 2) {
+			if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
+			if (guildData[msg.guild.id].sounds === undefined) guildData[msg.guild.id].sounds = [];
+			for (var i = 0; i < guildData[msg.guild.id].sounds.length; i++) {
+				if (guildData[msg.guild.id].sounds[i].name === args[0].toLowerCase()) {
+					return 'A sound with that name already exists.';
+				}
+			}
+			ytdl.getInfo(args[1], (err, info) => {
+				if (err) {
+					console.log(`[ERROR] Issue getting video metadata: ${err}`);
+					bot.createMessage(msg.channel.id, `[ERROR] Issue getting video data`);
+					return;
+				}
+				fs.readdir('sounds', (e, soundFiles) => {
+					if (e) {
+						console.log(`[ERROR] Issue getting sound files: ${err}`);
+						bot.createMessage(msg.channel.id, `[ERROR] Issue getting sound files`);
+						return;
+					}
+					if (soundFiles.includes(`${info.video_id}.complete`)) {
+						// already downloaded
+						let bkup = guildData[msg.guild.id].sounds;
+						try {
+							guildData[msg.guild.id].sounds.push({
+								name: args[0].toLowerCase(),
+								video: info.video_id,
+							});
+							fs.writeFileSync(`guildData/${msg.guild.id}.json`, JSON.stringify(guildData[msg.guild.id]));
+							bot.createMessage(msg.channel.id, `Added new sound ${args[0]}`);
+						} catch (error) {
+							guildData[msg.guild.id].sounds = bkup;
+							console.log(`Issue saving sounds for server ID ${msg.guild.id}: ${error}`);
+							bot.createMessage(msg.channel.id, `Error saving sounds for this server`);
+						}
+					} else {
+						// download new clip
+						// get some audio from some metadata
+						let video = ytdl.downloadFromInfo(info, {
+							filter: `audioonly`,
+						});
+						// pipe the audio into a file
+						video.on(`info`, (data) => {
+							console.log(`[INFO] Started download of ${info.title}`);
+							video.pipe(fs.createWriteStream(`sounds/${info.video_id}`));
+						});
+
+						// rename the file
+						video.on(`end`, () => {
+							console.log(`[INFO] Completed download of ${queue[id][0].title}`);
+							fs.renameSync(`sounds/${info.video_id}`, `sounds/${info.video_id}.complete`);
+							let bkup = guildData[msg.guild.id].sounds;
+							try {
+								guildData[msg.guild.id].sounds.push({
+									name: args[0].toLowerCase(),
+									video: info.video_id,
+								});
+								fs.writeFileSync(`guildData/${msg.guild.id}.json`, JSON.stringify(guildData[msg.guild.id]));
+								bot.createMessage(msg.channel.id, `Added new sound ${args[0]}`);
+							} catch (error) {
+								guildData[msg.guild.id].sounds = bkup;
+								console.log(`Issue saving sounds for server ID ${msg.guild.id}: ${error}`);
+								bot.createMessage(msg.channel.id, `Error saving sounds for this server`);
+							}
+						});
+
+						video.on(`error`, (er) => {
+							bot.createMessage(msg.channel.id, `[ERROR] There was an error downloading: ${queue[id][0].title}`);
+							console.log(`[ERROR] Issue downloading clip ${info.title}: ${er}`);
+						});
+					}
+				});
+			});
+		} else {
+			return 'Please supply a sound name and the youtube URL to the sound clip, see "Help AddSound" for more info';
+		}
+	},
+	{
+		aliases: ['+Sound', 'CreateSound', 'NewSound'],
+		description: 'Add a new sound',
+		fullDescription: 'Attach a name to a sound clip to be played at a later time.',
+		usage: 'AddSound <soundName> <SoundClipURL>',
+		argsRequired: true,
+		requirements: {
+			roleNames: ['tagbotadmin'],
+		},
 	}
 );
 
