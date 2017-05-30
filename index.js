@@ -429,7 +429,7 @@ bot.registerCommand(
 			}
 			return `Sorry, that soundname doesn't seem to exist on this server.`;
 		} else {
-			return `Incorrect syntax refer to 'Help RemoveSound' for more info`;
+			return `Incorrect syntax refer to 'Help Play' for more info`;
 		}
 	},
 	{
