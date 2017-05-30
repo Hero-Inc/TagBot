@@ -229,7 +229,7 @@ bot.registerCommand(
 );
 
 function next(id) {
-	bot.joinVoiceChannel(queue[id].channel)
+	bot.joinVoiceChannel(queue[id][0].channel)
 		.then(conn => {
 			conn.play(queue[id][0].sound)
 				.on(`end`, reason => {
@@ -405,6 +405,39 @@ bot.registerCommand(
 		usage: 'SoundList [--verbose]',
 		description: 'List all sounds',
 		fullDescription: 'Produces a list of all available sound tags on the current guild. Adding the --verbose flag displays the url for each tag.',
+	}
+);
+
+bot.registerCommand(
+	'Play',
+	(msg, args) => {
+		if (args.length > 0) {
+			if (msg.member.voiceState.channelID === undefined) return 'You must be in a voice channel to use this command';
+			if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
+			if (guildData[msg.guild.id].sounds === undefined) guildData[msg.guild.id].sounds = [];
+			for (let i = 0; i < guildData[msg.guild.id].sounds.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.guild.id].sounds[i].name) {
+					// Play it
+					queue[msg.guild.id].push({
+						channel: msg.member.voiceState.channelID,
+						sound: `sounds/${guildData[msg.guild.id].sounds[i].video}.complete`,
+						text: msg.channel.id,
+					});
+					next(msg.guild.id);
+					return ':)';
+				}
+			}
+			return `Sorry, that soundname doesn't seem to exist on this server.`;
+		} else {
+			return `Incorrect syntax refer to 'Help RemoveSound' for more info`;
+		}
+	},
+	{
+		aliases: ['SB', 'Sound', '.'],
+		usage: 'Play <soundName>',
+		description: 'Plays a sound',
+		argsRequired: true,
+		fullDescription: 'Makes the bot join your channel and play the specified sound clip.',
 	}
 );
 
