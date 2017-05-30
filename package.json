@@ -1,0 +1,11 @@
+{
+  "name": "tagbot",
+  "version": "1.0.0",
+  "description": "A bot for discord which tags sounds and messages",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
