@@ -288,6 +288,7 @@ bot.registerCommand(
 							bot.createMessage(msg.channel.id, `Error saving sounds for this server`);
 						}
 					} else {
+						if (info.length_seconds > 30) return bot.createMessage(msg.channel.id, 'Too long');
 						// download new clip
 						// get some audio from some metadata
 						let video = ytdl.downloadFromInfo(info, {
