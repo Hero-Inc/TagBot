@@ -234,7 +234,7 @@ bot.registerCommand(
 		}
 	},
 	{
-		aliases: ['DisplayTag', '/'],
+		aliases: ['DisplayTag', '.'],
 		usage: 'Tag <tagName>',
 		description: 'Use a tag',
 		argsRequired: true,
@@ -452,7 +452,7 @@ bot.registerCommand(
 		}
 	},
 	{
-		aliases: ['SB', 'Sound', '.'],
+		aliases: ['SB', 'Sound', '/'],
 		usage: 'Play <soundName>',
 		description: 'Plays a sound',
 		argsRequired: true,
