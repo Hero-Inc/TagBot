@@ -62,7 +62,7 @@ bot
 		// bot.createMessage(msg.channel.id, msg.content);
 	})
 	.on('error', err => {
-		throw err;
+		console.log(`[ERROR] ERIS Error: ${err}`);
 		// console.log(`[ERROR] ${err}`);
 	})
 	.on('ready', () => {
