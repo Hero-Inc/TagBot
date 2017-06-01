@@ -18,10 +18,6 @@ try {
 		console.log('[WARN] No sounds folder found, creating new folder now');
 		fs.mkdirSync('sounds');
 	}
-	if (!files.includes('tags')) {
-		console.log('[WARN] No tags folder found, creating new folder now');
-		fs.mkdirSync('tags');
-	}
 	if (!files.includes('guildData')) {
 		console.log('[WARN] No guildData folder found, creating new folder now');
 		fs.mkdirSync('guildData');
