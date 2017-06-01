@@ -71,8 +71,8 @@ bot
 	})
 	.on('ready', () => {
 		for (var id in guildData) {
-			if (guildData[id].settings.hasOwnProperty(id)) {
-				if (guildData[id].settings.prefix !== undefined && guildData[id].settings.prefix !== '') {
+			if (guildData[id].hasOwnProperty(id)) {
+				if (guildData[id].settings !== undefined && guildData[id].settings.prefix !== undefined && guildData[id].settings.prefix !== '') {
 					bot.registerGuildPrefix(id, guildData[id].settings.prefix);
 				}
 			}
