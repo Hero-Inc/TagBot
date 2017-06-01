@@ -443,7 +443,7 @@ bot.registerCommand(
 						text: msg.channel.id,
 					});
 					next(msg.channel.guild.id);
-					return ':)';
+					return;
 				}
 			}
 			return `Sorry, that soundname doesn't seem to exist on this server.`;
