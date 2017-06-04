@@ -82,12 +82,14 @@ bot.registerCommand(
 			let id = msg.channel.guild.id;
 			if (guildData[id] === undefined) guildData[id] = {};
 			if (guildData[id].settings === undefined) guildData[id].settings = {};
+			let bkup = guildData.settings;
 			try {
 				guildData[id].settings.prefix = args[0];
 				bot.registerGuildPrefix(id, args[0]);
 				fs.writeFileSync(`guildData/${id}.json`, JSON.stringify(guildData[id]));
 				return `Succesfully set command prefix to ${args[0]}`;
 			} catch (e) {
+				guildData.settings = bkup;
 				console.log(`[ERROR] Issue setting bot prefix for guildID ${id}: ${e}`);
 				return 'There was an error saving settings for this guild.';
 			}
