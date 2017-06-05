@@ -7,5 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "eris": "^0.7.0",
+    "node-opus": "^0.2.6",
+    "ytdl-core": "^0.14.2"
+  }
 }

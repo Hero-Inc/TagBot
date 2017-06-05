@@ -2,7 +2,9 @@ const Discord = require('eris');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 
-var config, guildData;
+var config = {};
+var guildData = {};
+var queue = {};
 
 let files = fs.readdirSync('./');
 if (files === undefined || files.length < 2) {
@@ -16,10 +18,6 @@ try {
 		console.log('[WARN] No sounds folder found, creating new folder now');
 		fs.mkdirSync('sounds');
 	}
-	if (!files.includes('tags')) {
-		console.log('[WARN] No tags folder found, creating new folder now');
-		fs.mkdirSync('tags');
-	}
 	if (!files.includes('guildData')) {
 		console.log('[WARN] No guildData folder found, creating new folder now');
 		fs.mkdirSync('guildData');
@@ -28,6 +26,7 @@ try {
 	for (let i = 0; i < guildFiles.length; i++) {
 		if (guildFiles[i].includes('.json')) {
 			let tempGuildData = JSON.parse(fs.readFileSync(`guildData/${guildFiles[i]}`));
+			guildData[guildFiles[i].substring(0, guildFiles[i].length - 5)] = {};
 			guildData[guildFiles[i].substring(0, guildFiles[i].length - 5)].tags = tempGuildData.tags;
 			guildData[guildFiles[i].substring(0, guildFiles[i].length - 5)].sounds = tempGuildData.sounds;
 			guildData[guildFiles[i].substring(0, guildFiles[i].length - 5)].settings = tempGuildData.settings;
@@ -63,22 +62,35 @@ bot
 		// bot.createMessage(msg.channel.id, msg.content);
 	})
 	.on('error', err => {
-		console.log(`[ERROR] ${err}`);
+		console.log(`[ERROR] ERIS Error: ${err}`);
+		// console.log(`[ERROR] ${err}`);
+	})
+	.on('ready', () => {
+		for (var id in guildData) {
+			if (guildData[id].hasOwnProperty(id)) {
+				if (guildData[id].settings !== undefined && guildData[id].settings.prefix !== undefined && guildData[id].settings.prefix !== '') {
+					bot.registerGuildPrefix(id, guildData[id].settings.prefix);
+				}
+			}
+		}
 	});
 
 bot.registerCommand(
 	'SetPrefix',
 	(msg, args) => {
 		if (args.length === 1) {
-			if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
-			if (guildData[msg.guild.id].settings === undefined) guildData[msg.guild.id].settings = {};
+			let id = msg.channel.guild.id;
+			if (guildData[id] === undefined) guildData[id] = {};
+			if (guildData[id].settings === undefined) guildData[id].settings = {};
+			let bkup = guildData.settings;
 			try {
-				guildData[msg.guild.id].settings.prefix = args[0];
-				bot.registerGuildPrefix(msg.guild.id, args[0]);
-				fs.writeFileSync(`guildData/${msg.guild.id}.json`, JSON.stringify(guildData[msg.guild.id]));
+				guildData[id].settings.prefix = args[0];
+				bot.registerGuildPrefix(id, args[0]);
+				fs.writeFileSync(`guildData/${id}.json`, JSON.stringify(guildData[id]));
 				return `Succesfully set command prefix to ${args[0]}`;
 			} catch (e) {
-				console.log(`[ERROR] Issue setting bot prefix for guildID ${msg.guild.id}: ${e}`);
+				guildData.settings = bkup;
+				console.log(`[ERROR] Issue setting bot prefix for guildID ${id}: ${e}`);
 				return 'There was an error saving settings for this guild.';
 			}
 		} else {
@@ -101,24 +113,24 @@ bot.registerCommand(
 	'AddTag',
 	(msg, args) => {
 		if (args.length > 1) {
-			if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
-			if (guildData[msg.guild.id].tags === undefined) guildData[msg.guild.id].tags = [];
-			for (let i = 0; i < guildData[msg.guild.id].tags.length; i++) {
-				if (args[0].toLowerCase() === guildData[msg.guild.id].tags[i].name) {
+			if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+			if (guildData[msg.channel.guild.id].tags === undefined) guildData[msg.channel.guild.id].tags = [];
+			for (let i = 0; i < guildData[msg.channel.guild.id].tags.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.channel.guild.id].tags[i].name) {
 					return `That tagname is already in use on this server.`;
 				}
 			}
-			let bkup = guildData[msg.guild.id].tags;
+			let bkup = guildData[msg.channel.guild.id].tags;
 			try {
-				guildData[msg.guild.id].tags.push({
+				guildData[msg.channel.guild.id].tags.push({
 					name: args[0].toLowerCase(),
 					content: args.splice(1, args.length - 1).join(` `),
 				});
-				fs.writeFileSync(`guildData/${msg.guild.id}.json`, JSON.stringify(guildData[msg.guild.id]));
+				fs.writeFileSync(`guildData/${msg.channel.guild.id}.json`, JSON.stringify(guildData[msg.channel.guild.id]));
 				return `Tag Created`;
 			} catch (e) {
-				guildData[msg.guild.id].tags = bkup;
-				console.log(`[ERROR] Issue saving tags for server ID ${msg.guild.id}: ${e}`);
+				guildData[msg.channel.guild.id].tags = bkup;
+				console.log(`[ERROR] Issue saving tags for server ID ${msg.channel.guild.id}: ${e}`);
 				return `Error saving tags for this server`;
 			}
 		} else {
@@ -141,18 +153,18 @@ bot.registerCommand(
 	'RemoveTag',
 	(msg, args) => {
 		if (args.length > 0) {
-			if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
-			if (guildData[msg.guild.id].tags === undefined) guildData[msg.guild.id].tags = [];
-			for (let i = 0; i < guildData[msg.guild.id].tags.length; i++) {
-				if (args[0].toLowerCase() === guildData[msg.guild.id].tags[i].name) {
-					let bkup = guildData[msg.guild.id].tags;
+			if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+			if (guildData[msg.channel.guild.id].tags === undefined) guildData[msg.channel.guild.id].tags = [];
+			for (let i = 0; i < guildData[msg.channel.guild.id].tags.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.channel.guild.id].tags[i].name) {
+					let bkup = guildData[msg.channel.guild.id].tags;
 					try {
-						guildData[msg.guild.id].tags.splice(i, 1);
-						fs.writeFileSync(`guildData/${msg.guild.id}.json`, JSON.stringify(guildData[msg.guild.id]));
+						guildData[msg.channel.guild.id].tags.splice(i, 1);
+						fs.writeFileSync(`guildData/${msg.channel.guild.id}.json`, JSON.stringify(guildData[msg.channel.guild.id]));
 						return `Tag Removed`;
 					} catch (e) {
-						guildData[msg.guild.id].tags = bkup;
-						console.log(`Issue saving tags for server ID ${msg.guild.id}: ${e}`);
+						guildData[msg.channel.guild.id].tags = bkup;
+						console.log(`Issue saving tags for server ID ${msg.channel.guild.id}: ${e}`);
 						return `Error saving tags for this server`;
 					}
 				}
@@ -177,8 +189,8 @@ bot.registerCommand(
 bot.registerCommand(
 	'TagList',
 	(msg, args) => {
-		if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
-		if (guildData[msg.guild.id].tags === undefined || guildData[msg.guild.id].tags.length === 0) {
+		if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+		if (guildData[msg.channel.guild.id].tags === undefined || guildData[msg.channel.guild.id].tags.length === 0) {
 			return 'No tags have been created on this guild.';
 		} else {
 			let verbose = false;
@@ -187,11 +199,11 @@ bot.registerCommand(
 					verbose = true;
 				}
 			}
-			let newmsg = `Tags available on ${msg.guild.name}`;
-			for (var i = 0; i < guildData[msg.guild.id].tags.length; i++) {
+			let newmsg = `Tags available on ${msg.channel.guild.name}`;
+			for (var i = 0; i < guildData[msg.channel.guild.id].tags.length; i++) {
 				if (verbose) newmsg += `\n`;
-				newmsg += `\n${guildData[msg.guild.id].tags[i].name}`;
-				if (verbose) newmsg += ` - ${guildData[msg.guild.id].tags[i].content}`;
+				newmsg += `\n${guildData[msg.channel.guild.id].tags[i].name}`;
+				if (verbose) newmsg += ` - ${guildData[msg.channel.guild.id].tags[i].content}`;
 			}
 			return newmsg;
 		}
@@ -207,20 +219,20 @@ bot.registerCommand(
 bot.registerCommand(
 	'Tag',
 	(msg, args) => {
-		if (guildData[msg.guild.id] === undefined) guildData[msg.guild.id] = [];
-		if (guildData[msg.guild.id].tags === undefined || guildData[msg.guild.id].tags.length === 0) {
+		if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+		if (guildData[msg.channel.guild.id].tags === undefined || guildData[msg.channel.guild.id].tags.length === 0) {
 			return 'No tags have been created on this guild.';
 		} else {
-			for (var i = 0; i < guildData[msg.guild.id].tags.length; i++) {
-				if (args[0].toLowerCase() === guildData[msg.guild.id].tags[i].name) {
-					return guildData[msg.guild.id].tags[i].content;
+			for (var i = 0; i < guildData[msg.channel.guild.id].tags.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.channel.guild.id].tags[i].name) {
+					return guildData[msg.channel.guild.id].tags[i].content;
 				}
 			}
 			return 'That tag does not appear to exist on this guild.';
 		}
 	},
 	{
-		aliases: ['DisplayTag', '/'],
+		aliases: ['DisplayTag', '.'],
 		usage: 'Tag <tagName>',
 		description: 'Use a tag',
 		argsRequired: true,
@@ -228,12 +240,222 @@ bot.registerCommand(
 	}
 );
 
-for (var id in guildData) {
-	if (guildData[id].settings.hasOwnProperty(id)) {
-		if (guildData[id].settings.prefix !== undefined && guildData[id].settings.prefix !== '') {
-			bot.registerGuildPrefix(id, guildData[id].settings.prefix);
-		}
-	}
+function next(id) {
+	bot.joinVoiceChannel(queue[id][0].channel)
+		.then(conn => {
+			conn.play(queue[id][0].sound, { inlineVolume: true });
+			conn.setVolume(0.15);
+			conn
+				.on(`end`, reason => {
+					queue[id].splice(0, 1);
+					if (queue[id].length > 0) {
+						return next(bot, id);
+					}
+					conn.disconnect();
+				});
+		})
+		.catch(e => {
+			bot.createMessage(queue[id][0].text, `[ERROR] Error joining voice channel: ${e}`);
+			queue[id].splice(0, 1);
+			if (queue[id].length > 0) {
+				return next(bot, id);
+			}
+		});
 }
+
+bot.registerCommand(
+	'AddSound',
+	(msg, args) => {
+		if (args.length === 2) {
+			if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+			if (guildData[msg.channel.guild.id].sounds === undefined) guildData[msg.channel.guild.id].sounds = [];
+			for (var i = 0; i < guildData[msg.channel.guild.id].sounds.length; i++) {
+				if (guildData[msg.channel.guild.id].sounds[i].name === args[0].toLowerCase()) {
+					return 'A sound with that name already exists.';
+				}
+			}
+			ytdl.getInfo(args[1], (err, info) => {
+				if (err) {
+					console.log(`[ERROR] Issue getting video metadata: ${err}`);
+					bot.createMessage(msg.channel.id, `[ERROR] Issue getting video data`);
+					return;
+				}
+				fs.readdir('sounds', (e, soundFiles) => {
+					if (e) {
+						console.log(`[ERROR] Issue getting sound files: ${err}`);
+						bot.createMessage(msg.channel.id, `[ERROR] Issue getting sound files`);
+						return;
+					}
+					if (soundFiles.includes(`${info.video_id}.complete`)) {
+						// already downloaded
+						let bkup = guildData[msg.channel.guild.id].sounds;
+						try {
+							guildData[msg.channel.guild.id].sounds.push({
+								name: args[0].toLowerCase(),
+								video: info.video_id,
+							});
+							fs.writeFileSync(`guildData/${msg.channel.guild.id}.json`, JSON.stringify(guildData[msg.channel.guild.id]));
+							bot.createMessage(msg.channel.id, `Added new sound ${args[0]}`);
+						} catch (error) {
+							guildData[msg.channel.guild.id].sounds = bkup;
+							console.log(`Issue saving sounds for server ID ${msg.channel.guild.id}: ${error}`);
+							bot.createMessage(msg.channel.id, `Error saving sounds for this server`);
+						}
+					} else {
+						if (info.length_seconds > 30) return bot.createMessage(msg.channel.id, 'Too long');
+						// download new clip
+						// get some audio from some metadata
+						let video = ytdl.downloadFromInfo(info, {
+							filter: `audioonly`,
+						});
+						// pipe the audio into a file
+						video.on(`info`, (data) => {
+							console.log(`[INFO] Started download of ${info.title}`);
+							video.pipe(fs.createWriteStream(`sounds/${info.video_id}`));
+						});
+
+						// rename the file
+						video.on(`end`, () => {
+							if (queue[msg.channel.guild.id] === undefined) queue[msg.channel.guild.id] = [];
+							console.log(`[INFO] Completed download of ${info.title}`);
+							fs.renameSync(`sounds/${info.video_id}`, `sounds/${info.video_id}.complete`);
+							let bkup = guildData[msg.channel.guild.id].sounds;
+							try {
+								guildData[msg.channel.guild.id].sounds.push({
+									name: args[0].toLowerCase(),
+									video: info.video_id,
+								});
+								fs.writeFileSync(`guildData/${msg.channel.guild.id}.json`, JSON.stringify(guildData[msg.channel.guild.id]));
+								bot.createMessage(msg.channel.id, `Added new sound ${args[0]}`);
+							} catch (error) {
+								guildData[msg.channel.guild.id].sounds = bkup;
+								console.log(`Issue saving sounds for server ID ${msg.channel.guild.id}: ${error}`);
+								bot.createMessage(msg.channel.id, `Error saving sounds for this server`);
+							}
+						});
+
+						video.on(`error`, (er) => {
+							bot.createMessage(msg.channel.id, `[ERROR] There was an error downloading: ${queue[msg.channel.guild.id][0].title}`);
+							console.log(`[ERROR] Issue downloading clip ${info.title}: ${er}`);
+						});
+					}
+				});
+			});
+		} else {
+			return 'Please supply a sound name and the youtube URL to the sound clip, see "Help AddSound" for more info';
+		}
+	},
+	{
+		aliases: ['+Sound', 'CreateSound', 'NewSound'],
+		description: 'Add a new sound',
+		fullDescription: 'Attach a name to a sound clip to be played at a later time.',
+		usage: 'AddSound <soundName> <SoundClipURL>',
+		argsRequired: true,
+		requirements: {
+			roleNames: ['tagbotadmin'],
+		},
+	}
+);
+
+bot.registerCommand(
+	'RemoveSound',
+	(msg, args) => {
+		if (args.length > 0) {
+			if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+			if (guildData[msg.channel.guild.id].sounds === undefined) guildData[msg.channel.guild.id].sounds = [];
+			for (let i = 0; i < guildData[msg.channel.guild.id].sounds.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.channel.guild.id].sounds[i].name) {
+					let bkup = guildData[msg.channel.guild.id].sounds;
+					try {
+						guildData[msg.channel.guild.id].sounds.splice(i, 1);
+						fs.writeFileSync(`guildData/${msg.channel.guild.id}.json`, JSON.stringify(guildData[msg.channel.guild.id]));
+						return `Tag Removed`;
+					} catch (e) {
+						guildData[msg.channel.guild.id].sounds = bkup;
+						console.log(`Issue saving sounds for server ID ${msg.channel.guild.id}: ${e}`);
+						return `Error saving sounds for this server`;
+					}
+				}
+			}
+			return `Sorry, that soundname doesn't seem to exist on this server.`;
+		} else {
+			return `Incorrect syntax refer to 'Help RemoveSound' for more info`;
+		}
+	},
+	{
+		aliases: ['-Sound', 'DeleteSound', 'DestroySound'],
+		description: 'Remove a saved sound',
+		fullDescription: 'Remove a sound tag which has been saved on this guild.',
+		usage: 'RemoveSound <soundName>',
+		argsRequired: true,
+		requirements: {
+			roleNames: ['tagbotadmin'],
+		},
+	}
+);
+
+bot.registerCommand(
+	'SoundList',
+	(msg, args) => {
+		if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+		if (guildData[msg.channel.guild.id].sounds === undefined || guildData[msg.channel.guild.id].sounds.length === 0) {
+			return 'No sounds have been created on this guild.';
+		} else {
+			let verbose = false;
+			for (let i = 0; i < args.length; i++) {
+				if (args[i].toLowerCase() === '--verbose') {
+					verbose = true;
+				}
+			}
+			let newmsg = `Sounds available on ${msg.channel.guild.name}`;
+			for (var i = 0; i < guildData[msg.channel.guild.id].sounds.length; i++) {
+				if (verbose) newmsg += `\n`;
+				newmsg += `\n${guildData[msg.channel.guild.id].sounds[i].name}`;
+				if (verbose) newmsg += ` - www.youtube.com/watch?v=${guildData[msg.channel.guild.id].sounds[i].video}`;
+			}
+			return newmsg;
+		}
+	},
+	{
+		aliases: ['ListSounds', 'ShowSounds', '~Sounds'],
+		usage: 'SoundList [--verbose]',
+		description: 'List all sounds',
+		fullDescription: 'Produces a list of all available sound tags on the current guild. Adding the --verbose flag displays the url for each tag.',
+	}
+);
+
+bot.registerCommand(
+	'Play',
+	(msg, args) => {
+		if (args.length > 0) {
+			if (msg.member.voiceState.channelID === undefined) return 'You must be in a voice channel to use this command';
+			if (guildData[msg.channel.guild.id] === undefined) guildData[msg.channel.guild.id] = {};
+			if (guildData[msg.channel.guild.id].sounds === undefined) guildData[msg.channel.guild.id].sounds = [];
+			if (queue[msg.channel.guild.id] === undefined) queue[msg.channel.guild.id] = [];
+			for (let i = 0; i < guildData[msg.channel.guild.id].sounds.length; i++) {
+				if (args[0].toLowerCase() === guildData[msg.channel.guild.id].sounds[i].name) {
+					// Play it
+					queue[msg.channel.guild.id].push({
+						channel: msg.member.voiceState.channelID,
+						sound: `sounds/${guildData[msg.channel.guild.id].sounds[i].video}.complete`,
+						text: msg.channel.id,
+					});
+					next(msg.channel.guild.id);
+					return;
+				}
+			}
+			return `Sorry, that soundname doesn't seem to exist on this server.`;
+		} else {
+			return `Incorrect syntax refer to 'Help Play' for more info`;
+		}
+	},
+	{
+		aliases: ['SB', 'Sound', '/'],
+		usage: 'Play <soundName>',
+		description: 'Plays a sound',
+		argsRequired: true,
+		fullDescription: 'Makes the bot join your channel and play the specified sound clip.',
+	}
+);
 
 bot.connect();
