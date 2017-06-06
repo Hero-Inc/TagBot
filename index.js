@@ -110,6 +110,16 @@ bot.registerCommand(
 );
 
 bot.registerCommand(
+	'GetLink',
+	config.inviteLink,
+	{
+		aliases: ['Link', 'AddURL'],
+		description: 'Add me to a guild',
+		fullDescription: 'Return a link to add me to your own guild.',
+	}
+);
+
+bot.registerCommand(
 	'AddTag',
 	(msg, args) => {
 		if (args.length > 1) {
