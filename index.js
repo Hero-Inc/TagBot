@@ -111,7 +111,13 @@ bot.registerCommand(
 
 bot.registerCommand(
 	'GetLink',
-	config.inviteLink,
+	(msg, args) => {
+		if (config.inviteLink === undefined || config.inviteLink === '') {
+			return 'Sorry, an invite link has not been configured by the bot owner.';
+		} else {
+			return config.inviteLink;
+		}
+	},
 	{
 		aliases: ['Link', 'AddURL'],
 		description: 'Add me to a guild',
