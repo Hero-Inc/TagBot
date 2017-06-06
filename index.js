@@ -115,7 +115,7 @@ bot.registerCommand(
 	{
 		aliases: ['Link', 'AddURL'],
 		description: 'Add me to a guild',
-		fullDescription: 'Return a link to add me to your own guild.',
+		fullDescription: 'Return a link which you can use to add me to your own guild.',
 	}
 );
 
