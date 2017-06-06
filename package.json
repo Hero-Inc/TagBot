@@ -1,12 +1,12 @@
 {
   "name": "tagbot",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A bot for discord which tags sounds and messages",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Heroj04",
   "license": "ISC",
   "dependencies": {
     "eris": "^0.7.0",
