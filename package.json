@@ -10,7 +10,15 @@
   "license": "ISC",
   "dependencies": {
     "eris": "^0.7.0",
-    "node-opus": "^0.2.6",
     "ytdl-core": "^0.14.2"
+  },
+  "optionalDependencies": {
+    "eventemitter3": "^2.0.3",
+    "node-opus": "^0.2.6",
+    "bluebird": "^3.5.0",
+    "bufferutil": "^3.0.1",
+    "erlpack": "github:hammerandchisel/erlpack",
+    "sodium-native": "^1.10.1",
+    "uws": "^0.14.5"
   }
 }
