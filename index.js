@@ -110,6 +110,22 @@ bot.registerCommand(
 );
 
 bot.registerCommand(
+	'GetLink',
+	(msg, args) => {
+		if (config.inviteLink === undefined || config.inviteLink === '') {
+			return 'Sorry, an invite link has not been configured by the bot owner.';
+		} else {
+			return config.inviteLink;
+		}
+	},
+	{
+		aliases: ['Link', 'AddURL'],
+		description: 'Add me to a guild',
+		fullDescription: 'Return a link which you can use to add me to your own guild.',
+	}
+);
+
+bot.registerCommand(
 	'AddTag',
 	(msg, args) => {
 		if (args.length > 1) {
